@@ -8,7 +8,7 @@ namespace EGS.Utils
         private static object _lock = new object();
         private static bool _appIsClosing = false; // Mudança de nome pra ficar claro
 
-        public virtual bool IsDontDestroyOnLoad => true;
+        public bool IsDontDestroyOnLoad = true;
 
         public static T Instance
         {
