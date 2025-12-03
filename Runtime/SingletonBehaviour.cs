@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Core.Utils
+namespace EGS.Utils
 {
     public abstract class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
     {
