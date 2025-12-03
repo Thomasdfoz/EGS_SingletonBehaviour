@@ -1,8 +1,10 @@
+using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace EGS.Utils
 {
- public class SingletonBehaviour<T> : MonoBehaviour where T : SingletonBehaviour<T>
+    public class SingletonBehaviour<T> : MonoBehaviour where T : SingletonBehaviour<T>
     {
         private static T m_instance;
 
