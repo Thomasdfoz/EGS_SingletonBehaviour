@@ -2,71 +2,48 @@ using UnityEngine;
 
 namespace EGS.Utils
 {
-    public abstract class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
+ public class SingletonBehaviour<T> : MonoBehaviour where T : SingletonBehaviour<T>
     {
-        private static T _instance;
-        private static object _lock = new object();
-        private static bool _appIsClosing = false; // Mudança de nome pra ficar claro
-
-        public bool IsDontDestroyOnLoad = true;
+        private static T m_instance;
 
         public static T Instance
         {
             get
             {
-                // Se o JOGO INTEIRO estiver fechando, retorna null para evitar erros
-                if (_appIsClosing) return null;
-
-                lock (_lock)
+                if (m_instance == null)
                 {
-                    if (_instance == null)
-                    {
-                        _instance = (T)FindAnyObjectByType(typeof(T));
+                    m_instance = FindAnyObjectByType<T>();
 
-                        if (_instance == null)
-                        {
-                            var singletonObject = new GameObject();
-                            _instance = singletonObject.AddComponent<T>();
-                            singletonObject.name = typeof(T).ToString() + " (Singleton)";
-                        }
+                    if (m_instance == null)
+                    {
+                        m_instance = new GameObject(
+                            typeof(T).Name, typeof(T)
+                        ).GetComponent<T>();
                     }
 
-                    return _instance;
+                    if (m_instance == null)
+                        throw new NullReferenceException("Component of Type " + typeof(T).Name + "  not Found in Scene " + SceneManager.GetActiveScene().name);
                 }
+
+                return m_instance;
             }
         }
+
+        public bool IsDontDestroyOnLoad = true;
 
         protected virtual void Awake()
         {
-            if (_appIsClosing) return;
-
-            if (_instance == null)
-            {
-                _instance = this as T;
-                if (IsDontDestroyOnLoad && transform.parent == null)
-                {
-                    DontDestroyOnLoad(gameObject);
-                }
-            }
-            else if (_instance != this)
+            if (m_instance != null && m_instance != this)
             {
                 Destroy(gameObject);
+                return;
             }
-        }
 
-        // Essa função é chamada SOMENTE quando fecha a janela do jogo/Unity
-        protected virtual void OnApplicationQuit()
-        {
-            _appIsClosing = true;
-        }
+            m_instance = (T)this;
 
-        protected virtual void OnDestroy()
-        {
-            // AQUI ESTAVA O ERRO: Removemos o "_appIsClosing = true" daqui.
-            // Apenas limpamos a referência se nós formos a instância morrendo.
-            if (_instance == this)
+            if (IsDontDestroyOnLoad)
             {
-                _instance = null;
+                DontDestroyOnLoad(gameObject);
             }
         }
     }
