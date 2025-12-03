@@ -1,40 +1,30 @@
-using System;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
-
-namespace EGS.Utils 
+namespace Core.Utils
 {
-   public abstract class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
+    public abstract class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
     {
         private static T _instance;
         private static object _lock = new object();
-        private static bool _isQuitting = false;
+        private static bool _appIsClosing = false; // Mudança de nome pra ficar claro
 
-        // Propriedade para configurar se deve persistir entre cenas
-        public bool IsDontDestroyOnLoad = true; 
+        public virtual bool IsDontDestroyOnLoad => true;
 
         public static T Instance
         {
             get
             {
-                if (_isQuitting)
-                {
-                    // Debug.LogWarning($"[Singleton] Tentou acessar '{typeof(T)}' após o encerramento do jogo. Retornando null.");
-                    return null;
-                }
+                // Se o JOGO INTEIRO estiver fechando, retorna null para evitar erros
+                if (_appIsClosing) return null;
 
                 lock (_lock)
                 {
                     if (_instance == null)
                     {
-                        // Tenta achar na cena
                         _instance = (T)FindAnyObjectByType(typeof(T));
 
-                        // Se ainda não existe e não estamos saindo...
                         if (_instance == null)
                         {
-                            // Cria um novo objeto
                             var singletonObject = new GameObject();
                             _instance = singletonObject.AddComponent<T>();
                             singletonObject.name = typeof(T).ToString() + " (Singleton)";
@@ -48,10 +38,11 @@ namespace EGS.Utils
 
         protected virtual void Awake()
         {
+            if (_appIsClosing) return;
+
             if (_instance == null)
             {
                 _instance = this as T;
-                
                 if (IsDontDestroyOnLoad && transform.parent == null)
                 {
                     DontDestroyOnLoad(gameObject);
@@ -59,23 +50,23 @@ namespace EGS.Utils
             }
             else if (_instance != this)
             {
-                // Se já existe outro, destrói este impostor
-                Destroy(gameObject); 
+                Destroy(gameObject);
             }
         }
 
-        // A Unity chama isso automaticamente quando você aperta Stop ou fecha o jogo.
+        // Essa função é chamada SOMENTE quando fecha a janela do jogo/Unity
         protected virtual void OnApplicationQuit()
         {
-            _isQuitting = true;
+            _appIsClosing = true;
         }
 
-        // Garante que se o objeto for destruído manualmente, a referência estática limpa
         protected virtual void OnDestroy()
         {
+            // AQUI ESTAVA O ERRO: Removemos o "_appIsClosing = true" daqui.
+            // Apenas limpamos a referência se nós formos a instância morrendo.
             if (_instance == this)
             {
-                _isQuitting = true; // Previne recriação se destruído manualmente na troca de cena
+                _instance = null;
             }
         }
     }
